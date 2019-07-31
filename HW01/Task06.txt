@@ -1,0 +1,24 @@
+Задача: 6. Найдите, какую СУБД использует любимый вами проект
+Выберите проект, которым вы часто пользуетесь и найдите информацию с помощью какой базы данных он реализован.
+Классификация: иерархическая, сетевая, реляционная, объектно-ориентированная, NoSql (если знаете колоночная, key-value, документарная, in-memory, графовая)
+Структура ответа:
+Название проекта: Проект
+Используемые базы данных: БД (реляционная), БД (NoSQL документарная)
+Количество серверов БД: 10
+Ссылка на источник:
+////////////////////////////////////////////////////
+
+Название проекта: Alibaba /AliExpress (e-com sector), MaxCompute (data warehouse solution)
+Используемые базы данных:  SQL (relation) - Hive, in MapReduce (clusters)
+Количество серверов БД:
+15 clusters
+1.7 mil CPcores
+5.4 PB of RAM
+2 mil tables
+250 mil partitions
+1.9EB data stored
+11,000 users
+1,000+ projects
+3 mil jobs and 180 PB
+data processed daily
+Ссылка на источник: Доклад на Highload++ 2018  https://drive.google.com/file/d/1oqhhF82jI2aQhkJE3SSEoz9bReEy7LxZ/view 
