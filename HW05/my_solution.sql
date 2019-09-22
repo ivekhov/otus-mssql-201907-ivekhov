@@ -204,4 +204,76 @@ INSERT INTO dbo.MyEmployees VALUES
 ,(16, N'David',N'Bradley', N'Marketing Manager', 4, 273) 
 ,(23, N'Mary', N'Gibson', N'Marketing Specialist', 4, 16); 
 
--- 2do:
+-- temp table
+CREATE TABLE #my_table_2
+(
+	EmployeeID smallint NOT NULL, 
+	FirstName nvarchar(30) NOT NULL, 
+	LastName nvarchar(40) NOT NULL, 
+	Title nvarchar(50) NOT NULL, 
+	DeptID smallint NOT NULL, 
+	ManagerID int NULL, 
+	CONSTRAINT PK_EmployeeID PRIMARY KEY CLUSTERED (EmployeeID ASC) 
+);
+
+WITH CTE AS 
+(
+	SELECT 
+		EmployeeID
+		, CONCAT(MyEmployees.FirstName, ' ', MyEmployees.LastName) AS EmplName
+		, Title
+		, 1 AS EmployeeLevel
+	FROM MyEmployees
+	WHERE ManagerID IS NULL
+	UNION ALL
+
+	SELECT 
+		me.EmployeeID
+		, CONCAT(me.FirstName, ' ', me.LastName) AS EmplName
+		, me.Title
+		, mycte.EmployeeLevel + 1 AS EmployeeLevel
+	FROM CTE AS mycte
+		JOIN MyEmployees AS me
+			ON mycte.EmployeeID = me.ManagerID
+)
+SELECT * INTO #my_table_2
+FROM CTE;
+
+
+-- table variable
+
+DECLARE @my_table_var TABLE 
+(
+	EmployeeID smallint NOT NULL, 
+	FirstName nvarchar(30) NOT NULL, 
+	LastName nvarchar(40) NOT NULL, 
+	Title nvarchar(50) NOT NULL, 
+	DeptID smallint NOT NULL, 
+	ManagerID int NULL
+	--,CONSTRAINT PK_EmployeeID PRIMARY KEY CLUSTERED (EmployeeID ASC) 
+);
+
+WITH CTE AS 
+(
+	SELECT 
+		EmployeeID
+		, CONCAT(MyEmployees.FirstName, ' ', MyEmployees.LastName) AS EmplName
+		, Title
+		, 1 AS EmployeeLevel
+	FROM MyEmployees
+	WHERE ManagerID IS NULL
+	UNION ALL
+
+	SELECT 
+		me.EmployeeID
+		, CONCAT(me.FirstName, ' ', me.LastName) AS EmplName
+		, me.Title
+		, mycte.EmployeeLevel + 1 AS EmployeeLevel
+	FROM CTE AS mycte
+		JOIN MyEmployees AS me
+			ON mycte.EmployeeID = me.ManagerID
+)
+SELECT * INTO my_table_var
+FROM CTE;
+
+-----------------------------------------------------------------------
