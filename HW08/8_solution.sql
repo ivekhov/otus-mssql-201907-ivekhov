@@ -245,103 +245,82 @@ LEFT JOIN Sales.Orders as so
 	ON so.SalespersonPersonID = ap.PersonID
 WHERE ap.IsSalesperson = 1
 ;
+-------------------------------------------------------------
 
 
+/* Task 5. По каждому сотруднику выведите последнего клиента, которому сотрудник 
+что-то продал. В результатах должны быть ид и фамилия сотрудника, ид и название клиента, дата 
+продажи, сумму сделки. */
 
-select  * from Sales.Orders ;
+---------------------------------
+-- teachers example
+
+SELECT 
+	Trns.SalespersonPersonID,
+	p.FullName,
+	Trns.CustomerID,
+	c.CustomerName,
+	Trns.TransactionDate,
+	Trns.TransactionAmount
+FROM
+(
+	SELECT
+	i.SalespersonPersonID,
+	i.CustomerID,
+	tr.TransactionDate,
+	tr.TransactionAmount,
+	ROW_NUMBER() OVER (PARTITION BY i.SalespersonPersonID ORDER BY tr.TransactionDate DESC) as TrRank -- RANK() или MAX(), если нужны все клиенты за последнюю дату
+	FROM Sales.Invoices AS i
+	JOIN Sales.CustomerTransactions as tr
+		ON i.InvoiceID = tr.InvoiceID
+		)  AS Trns
+
+JOIN Sales.Customers AS c
+	ON Trns.CustomerID = c.CustomerID
+JOIN Application.People AS p
+	ON Trns.SalespersonPersonID = p.PersonID
+WHERE TrRank = 1
+;
+---------------------------------
 
 
 -------------------------------------------------------------
 /*6. Выберите по каждому клиенту 2 самых дорогих товара, которые он покупал
  В результатах должно быть ид клиета, его название, ид товара, цена, дата покупки. */
 
+SELECT 
+	cp.CustomerID
+	, cp.StockItemID
+	, cp.OrderDate
+	, cp.UnitPrice
+	, cp.OrderDate
+	, sc.CustomerName
+from 
+(
+	select 
+		so.CustomerID
+		, sol.StockItemID
+		, sol.[Description]
+		, sol.UnitPrice
+		, so.OrderDate
+		, ROW_NUMBER() OVER (
+			PARTITION BY so.CustomerID
+			ORDER BY Unitprice DESC
+		) AS PriceRank
+	from Sales.Orders as so
+	LEFT JOIN Sales.OrderLines as sol
+		ON so.OrderID = sol.OrderID
+	LEFT JOIN Sales.Customers as sc
+		ON so.CustomerID = sc.CustomerID
+) as cp
+left join Sales.Customers as sc
+	on sc.CustomerID = cp.CustomerID
+where PriceRank < 3
+;
+
 -------------------------------------------------------------
 -------------------------------------------------------------
--- how2 format datetime into yyyy--mm-dd? 
--- FORMAT(date from table, pattern'')
--- LEFT(StockItemName, 1) - получить первый символ строки слева
 
-
--- ToDo: 2, 3, 4, 5  + their alternatives for 2, 4, 5  + bonus
-
--- Опционально можно сделать вариант запросов для заданий 2,4,5 без использования 
--- windows function и 
--- сравнить скорость как в задании 1.
-
--- Bonus из предыдущей темы
 -- Напишите запрос, который выбирает 10 клиентов, которые сделали больше 30 заказов 
 -- и последний заказ 
 -- был не позднее апреля 2016.
-
--------------------------------------------------------------------------------------
--------------------------------------------------------------------------------------
--- Work versions, not actual
--------------------------------------------------------------------------------------
--------------------------------------------------------------------------------------
-
--- DROP TABLE IF EXISTS #task8_temp_table_v_4;
--- CREATE TABLE #task8_temp_table_v_4(
--- 	InvoiceMonth NVARCHAR(10)
--- 	, ProductName NVARCHAR(255)
--- 	, Volume INT
--- 	, RankNumber INT
--- );
--- INSERT INTO #task8_temp_table_v_4(
--- 	InvoiceMonth
--- 	, ProductName
--- 	, Volume
--- 	, RankNumber
--- )
--- SELECT
--- 	FORMAT(si.InvoiceDate, 'yyyy-MM') AS InvoiceMonth
--- 	, sil.Description AS ProductName
--- 	, SUM(sil.Quantity) AS Volume
--- 	, ROW_NUMBER() OVER (
--- 		PARTITION BY 
--- 			FORMAT(si.InvoiceDate, 'yyyy-MM')
--- 		ORDER BY 
--- 			SUM(sil.Quantity) DESC
--- 		)
--- FROM Sales.InvoiceLines AS sil
--- 	LEFT JOIN Sales.Invoices AS si
--- 		ON (sil.InvoiceID = si.InvoiceID)
--- WHERE YEAR(si.InvoiceDate) = 2016
--- GROUP BY 
--- 	FORMAT(si.InvoiceDate, 'yyyy-MM')
--- 	, sil.Description
--- ORDER BY InvoiceMonth, Volume  DESC 
--- ;
-
--- -------
-
--- SELECT 
--- 	InvoiceMonth
--- 	, ProductName
--- 	, Volume
--- 	, RankNumber
--- FROM #task8_temp_table_v_4 
--- WHERE RankNumber < 3
--- ORDER BY 
--- 	InvoiceMonth
--- 	, RankNumber ASC
--- ;
--- -------------
-
-
--- select
--- 	SalesPersonPersonID
--- 	-- , OrderID
--- 	-- , OrderDate
--- 	-- , CustomerID
--- 	-- , LAST_VALUE(OrderDate) OVER(
--- 	-- 			PARTITION BY SalesPersonPersonID
--- 	-- 	ORDER BY SalesPersonPersonID, OrderDate
--- 	-- )
--- 	, LAST_VALUE(CustomerID) OVER (
--- 		PARTITION BY SalesPersonPersonID
--- 		ORDER BY OrderDate
--- 	--  ROWs BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
--- 	) AS LastClient
--- from Sales.Orders
--- ;
--------------------------------------------------------------------------------------
