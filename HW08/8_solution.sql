@@ -14,11 +14,11 @@ CREATE TABLE #task8_temp_table_v_1(
 );
 
 INSERT INTO #task8_temp_table_v_1
-( 	InvoiceID		--Sales.Invoices.InvoiceID
-	, CustomerName	--Sales.Invoices.CustomerID join 
-	, SalesDate		--Sales.Invoices.InvoiceDate
-	, SalesSum		--Sales.InvoiceLines.ExtendedPrice on InvoiceID
-	, SalesMonth	--Sales.Invoices.InvoiceDate
+( 	InvoiceID
+	, CustomerName 
+	, SalesDate
+	, SalesSum
+	, SalesMonth
 )
 SELECT
 	si.InvoiceID
@@ -57,7 +57,6 @@ ORDER BY t.SalesDate;
 -------------------------------------------------------------
 
 
-
 -- creating table variable with data
 DECLARE @task8_temp_var_v_1 table (
 	InvoiceID BIGINT PRIMARY KEY
@@ -68,11 +67,11 @@ DECLARE @task8_temp_var_v_1 table (
 );
 
 INSERT INTO @task8_temp_var_v_1
-( 	InvoiceID		--Sales.Invoices.InvoiceID
-	, CustomerName	--Sales.Invoices.CustomerID join 
-	, SalesDate		--Sales.Invoices.InvoiceDate
-	, SalesSum		--Sales.InvoiceLines.ExtendedPrice on InvoiceID
-	, SalesMonth	--Sales.Invoices.InvoiceDate
+( 	InvoiceID
+	, CustomerName 
+	, SalesDate
+	, SalesSum
+	, SalesMonth
 )
 SELECT
 	si.InvoiceID
@@ -110,7 +109,7 @@ ORDER BY t.SalesDate;
 -------------------------------------------------------------
 
 
--- Task #1.2 calculation with window function.
+-- Task 2 calculation with window function.
 SELECT
 	InvoiceID
 	, CustomerName
@@ -130,28 +129,33 @@ ORDER BY SalesDate;
 -- 2) temp variables are much slower than window functions and temp tables.
 -------------------------------------------------------------
 
--- Task #2. Вывести список 2х самых популярных продуктов (по кол-ву проданных) каждом месяце  
+-- Task #3. Вывести список 2х самых популярных продуктов (по кол-ву проданных) каждом месяце  
 -- за 2016 год (по 2 самых популярных продукта в каждом месяце)
 
--- month
--- product name 
--- (sum of units top(2) )
-
-DROP TABLE IF EXISTS #task8_temp_table_v_2;
-CREATE TABLE #task8_temp_table_v_2(
+DROP TABLE IF EXISTS #task8_temp_table_v_3;
+CREATE TABLE #task8_temp_table_v_3(
 	InvoiceMonth NVARCHAR(10)
 	, ProductName NVARCHAR(255)
 	, Volume INT
+	, RankNumber INT
 );
-INSERT INTO #task8_temp_table_v_2(
+
+INSERT INTO #task8_temp_table_v_3(
 	InvoiceMonth
 	, ProductName
 	, Volume
+	, RankNumber
 )
 SELECT
 	FORMAT(si.InvoiceDate, 'yyyy-MM') AS InvoiceMonth
 	, sil.Description AS ProductName
 	, SUM(sil.Quantity) AS Volume
+	, ROW_NUMBER() OVER (
+		PARTITION BY 
+			FORMAT(si.InvoiceDate, 'yyyy-MM')
+		ORDER BY 
+			SUM(sil.Quantity) DESC
+		)
 FROM Sales.InvoiceLines AS sil
 	LEFT JOIN Sales.Invoices AS si
 		ON (sil.InvoiceID = si.InvoiceID)
@@ -159,73 +163,106 @@ WHERE YEAR(si.InvoiceDate) = 2016
 GROUP BY 
 	FORMAT(si.InvoiceDate, 'yyyy-MM')
 	, sil.Description
-ORDER BY InvoiceMonth, Volume  DESC 
+ORDER BY InvoiceMonth, Volume  DESC
 ;
 
-SELECT *  FROM #task8_temp_table_v_2;
-
-
-SELECT TOP(100) 
+SELECT 
 	InvoiceMonth
 	, ProductName
 	, Volume
-	, RANK() OVER (
-		PARTITION BY InvoiceMonth, Volume
-		ORDER BY InvoiceMonth, Volume
-	) 
-FROM #task8_temp_table_v_2
-ORDER BY InvoiceMonth, Volume;
+	, RankNumber
+FROM #task8_temp_table_v_3
+WHERE RankNumber < 3
+ORDER BY 
+	InvoiceMonth
+	, RankNumber ASC
+;
+-------------------------------------------------------------
+
+/*
+Task 4. Функции одним запросом
++ Посчитайте по таблице товаров, в вывод также должен попасть ид товара, название, брэнд и цена
++ пронумеруйте записи по названию товара, так чтобы при изменении буквы алфавита нумерация начиналась заново
++ посчитайте общее количество товаров и выведете полем в этом же запросе
++ посчитайте общее количество товаров в зависимости от первой буквы названия товара
++ отобразите следующий id товара исходя из того, что порядок отображения товаров по имени
++ отобразите	предыдущий ид товара с тем же порядком отображения (по имени)
++ отобразите названия товара 2 строки назад, в случае если предыдущей строки нет нужно вывести "No items"
+~ сформируйте 30 групп товаров по полю вес товара на 1 шт
+*/
+
+SELECT
+	StockItemID
+	, StockItemName
+	, UnitPrice
+	, ROW_NUMBER() OVER (
+		PARTITION BY LEFT(StockItemName, 1)
+		ORDER BY StockItemName ASC
+	) AS RowNumberInFirstLetterOfName
+	, COUNT(StockItemName) OVER () AS ItemsCount
+	, COUNT(StockItemName) OVER (
+		PARTITION BY LEFT(StockItemName, 1)
+	) AS ItemsCountByFirstLetterofName
+	, LEAD(StockItemID) OVER (
+		ORDER BY StockItemName ASC
+	) AS NextId
+	, LAG (StockItemID) OVER (
+		ORDER BY StockItemName ASC
+	) AS PrevId
+	, LAG (StockItemName, 2, 'No Items') OVER (
+		ORDER BY StockItemName ASC
+	) AS PrevStockItemName
+	, TypicalWeightPerUnit
+
+	, NTILE(30) OVER (
+		PARTITION BY TypicalWeightPerUnit
+		ORDER BY StockItemName
+	)
+	/*в последнем пунтке непонятна задача, поэтому есть вероятность
+	неверного решения*/
+FROM Warehouse.StockItems
+;
+-------------------------------------------------------------
 
 
---ORDER BY Volume;
+/* Task 5. По каждому сотруднику выведите последнего клиента, которому сотрудник 
+что-то продал. В результатах должны быть ид и фамилия сотрудника, ид и название клиента, дата 
+продажи, сумму сделки. */
 
--- SELECT  
--- 	InvoiceMonth
--- 	, ProductName
--- 	, LAG(Volume) OVER (
--- 		PARTITION BY InvoiceMonth, ProductName
--- 		ORDER BY Volume
--- 		-- ROWS 2 PRECEDING
--- 	)
--- FROM #task8_temp_table_v_2
--- ;
+-- ToDo
+SELECT
+	ap.PersonID
+	, ap.FullName
+	, LAST_VALUE(so.CustomerID) OVER (
+		-- PARTITION BY ap.PersonID
+		ORDER BY ap.PersonID
+	--  ROWs BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+	) AS LastClient
+	, so.OrderDate
+	, so.OrderID
+FROM Application.People as ap
+LEFT JOIN Sales.Orders as so
+	ON so.SalespersonPersonID = ap.PersonID
+WHERE ap.IsSalesperson = 1
+;
 
--- ToDo: 2, 3, 4, 5  + their alternatives for 2, 4, 5  + bonus
+
+
+select  * from Sales.Orders ;
+
+
+-------------------------------------------------------------
+/*6. Выберите по каждому клиенту 2 самых дорогих товара, которые он покупал
+ В результатах должно быть ид клиета, его название, ид товара, цена, дата покупки. */
 
 -------------------------------------------------------------
 -------------------------------------------------------------
 -- how2 format datetime into yyyy--mm-dd? 
 -- FORMAT(date from table, pattern'')
+-- LEFT(StockItemName, 1) - получить первый символ строки слева
 
 
--- 4. Функции одним запросом
--- Посчитайте по таблице товаров, в вывод также должен попасть ид 
--- товара, 
--- название, брэнд и цена
--- пронумеруйте записи по названию товара, так чтобы при изменении 
--- буквы алфавита 
--- нумерация начиналась заново
--- посчитайте общее количество товаров и выведете полем в этом же запросе
--- посчитайте общее количество товаров в зависимости от первой буквы 
--- названия товара
--- отобразите следующий id товара исходя из того, что порядок отображения 
--- товаров по имени
--- предыдущий ид товара с тем же порядком отображения (по имени)
--- названия товара 2 строки назад, в случае если предыдущей строки нет 
--- нужно вывести 
--- "No items"
--- сформируйте 30 групп товаров по полю вес товара на 1 шт
--- Для этой задачи НЕ нужно писать аналог без аналитических функций
-
-
--- 5. По каждому сотруднику выведите последнего клиента, которому сотрудник 
--- что-то продал
--- В результатах должны быть ид и фамилия сотрудника, ид и название клиента, дата 
--- продажи, сумму сделки
-
-
--- 6. Выберите по каждому клиенту 2 самых дорогих товара, которые он покупал
--- В результатах должно быть ид клиета, его название, ид товара, цена, дата покупки
+-- ToDo: 2, 3, 4, 5  + their alternatives for 2, 4, 5  + bonus
 
 -- Опционально можно сделать вариант запросов для заданий 2,4,5 без использования 
 -- windows function и 
@@ -235,3 +272,76 @@ ORDER BY InvoiceMonth, Volume;
 -- Напишите запрос, который выбирает 10 клиентов, которые сделали больше 30 заказов 
 -- и последний заказ 
 -- был не позднее апреля 2016.
+
+-------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
+-- Work versions, not actual
+-------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
+
+-- DROP TABLE IF EXISTS #task8_temp_table_v_4;
+-- CREATE TABLE #task8_temp_table_v_4(
+-- 	InvoiceMonth NVARCHAR(10)
+-- 	, ProductName NVARCHAR(255)
+-- 	, Volume INT
+-- 	, RankNumber INT
+-- );
+-- INSERT INTO #task8_temp_table_v_4(
+-- 	InvoiceMonth
+-- 	, ProductName
+-- 	, Volume
+-- 	, RankNumber
+-- )
+-- SELECT
+-- 	FORMAT(si.InvoiceDate, 'yyyy-MM') AS InvoiceMonth
+-- 	, sil.Description AS ProductName
+-- 	, SUM(sil.Quantity) AS Volume
+-- 	, ROW_NUMBER() OVER (
+-- 		PARTITION BY 
+-- 			FORMAT(si.InvoiceDate, 'yyyy-MM')
+-- 		ORDER BY 
+-- 			SUM(sil.Quantity) DESC
+-- 		)
+-- FROM Sales.InvoiceLines AS sil
+-- 	LEFT JOIN Sales.Invoices AS si
+-- 		ON (sil.InvoiceID = si.InvoiceID)
+-- WHERE YEAR(si.InvoiceDate) = 2016
+-- GROUP BY 
+-- 	FORMAT(si.InvoiceDate, 'yyyy-MM')
+-- 	, sil.Description
+-- ORDER BY InvoiceMonth, Volume  DESC 
+-- ;
+
+-- -------
+
+-- SELECT 
+-- 	InvoiceMonth
+-- 	, ProductName
+-- 	, Volume
+-- 	, RankNumber
+-- FROM #task8_temp_table_v_4 
+-- WHERE RankNumber < 3
+-- ORDER BY 
+-- 	InvoiceMonth
+-- 	, RankNumber ASC
+-- ;
+-- -------------
+
+
+-- select
+-- 	SalesPersonPersonID
+-- 	-- , OrderID
+-- 	-- , OrderDate
+-- 	-- , CustomerID
+-- 	-- , LAST_VALUE(OrderDate) OVER(
+-- 	-- 			PARTITION BY SalesPersonPersonID
+-- 	-- 	ORDER BY SalesPersonPersonID, OrderDate
+-- 	-- )
+-- 	, LAST_VALUE(CustomerID) OVER (
+-- 		PARTITION BY SalesPersonPersonID
+-- 		ORDER BY OrderDate
+-- 	--  ROWs BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+-- 	) AS LastClient
+-- from Sales.Orders
+-- ;
+-------------------------------------------------------------------------------------
