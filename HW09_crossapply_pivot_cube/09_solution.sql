@@ -142,3 +142,61 @@ ORDER BY OrderDate ASC;
 ---------------------
 
 -- ToDo: put CustomerNames from script, not hard-coding.
+-----------------------------------------------------
+
+
+/*
+2. Для всех клиентов с именем, в котором есть Tailspin Toys
+вывести все адреса, которые есть в таблице, в одной колонке
+
+Пример результатов:
+CustomerName                    AddressLine
+Tailspin Toys (Head Office)     Shop 38
+Tailspin Toys (Head Office)     1877 Mittal Road
+Tailspin Toys (Head Office)     PO Box 8975
+Tailspin Toys (Head Office)     Ribeiroville
+*/
+
+-- steps: 
+-- create sample of rows for condition
+-- put cross apply condition
+
+
+-- possible solution (?) new information on task needed. 
+SELECT 
+    CustomerName
+    , a.*
+FROM Sales.Customers as sc1
+    CROSS APPLY (
+        SELECT DISTINCT DeliveryAddressLine1
+        FROM Sales.Customers as sc2
+        -- WHERE sc1.CustomerID = sc2.CustomerID
+    ) AS a
+-- WHERE CustomerName LIKE '%Tailspin Toys%'
+WHERE CustomerName = 'Tailspin Toys (Head Office)'
+ORDER BY CustomerName;
+
+
+
+SELECT DeliveryAddressLine1, DeliveryAddressLine2
+FROM Sales.Customers
+where DeliveryAddressLine2 like '%Ribeiroville%' 
+    or DeliveryAddressLine2 like '%PO Box 8975%'
+    or DeliveryAddressLine2 like '%1877 Mittal Road%'
+    or DeliveryAddressLine1  like '%Ribeiroville%' 
+    or DeliveryAddressLine1 like '%PO Box 8975%'
+    or DeliveryAddressLine1 like '%1877 Mittal Road%'
+;
+-- result is one row :Shop 38	1877 Mittal Road
+
+
+
+----------------------
+-- wrong solution.
+SELECT 
+    CustomerName
+    , DeliveryAddressLine1
+FROM Sales.Customers
+WHERE CustomerName LIKE '%Tailspin Toys%'
+ORDER BY CustomerName;
+----------------------
