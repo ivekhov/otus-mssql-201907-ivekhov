@@ -12,7 +12,7 @@ GO
 например исходное Tailspin Toys (Gasport, NY) - вы выводите в имени только Gasport,NY
 дата должна иметь формат dd.mm.yyyy например 25.12.2019
 
-Например, как должны выглядеть результаты:
+Например, как должны выглядеть результаты:  
 InvoiceMonth    Peeples Valley, AZ Medicine Lodge, KS Gasport, NY Sylvanite, MT Jessie, ND
 01.01.2013      3               1                   4           2               2 
 01.02.2013      7               3                   4           2               1
