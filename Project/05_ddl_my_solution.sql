@@ -6,7 +6,7 @@ USE Stocks;
 GO
 
 -- Creating tables with primary and foreign keys #2-3
--- Exchanges table:
+-- #1 Exchanges table:
 -- contain list of world stock exchanges.
 
 -- w\o constraints in create table instruction
@@ -19,7 +19,8 @@ CREATE TABLE Exchanges(
 ALTER TABLE Exchanges 
 	ADD CONSTRAINT PK_Exchanges PRIMARY KEY CLUSTERED(Id);
 
--- Indicies table
+
+-- #2 Indicies table
 -- Contain list of world indices. Many-to-one relation to exchanges.
 
 -- constraints inside create table script
@@ -30,11 +31,9 @@ CREATE TABLE Indicies(
 	, ExchangeId int
 	, CONSTRAINT PK_Indicies PRIMARY KEY CLUSTERED(Id)
 	, CONSTRAINT FK_Indicies_Exchanges FOREIGN KEY (ExchangeId) REFERENCES Exchanges (Id)
-	ON UPDATE CASCADE
-	ON DELETE CASCADE
 );
 
--- Data on WorldIndices price dynamic per day
+-- #3 Data on WorldIndices price dynamic per day
 -- Source: Yahoo Finance: https://finance.yahoo.com/world-indices 
 CREATE TABLE IndiciesData(
 	Id int NOT NULL IDENTITY
@@ -50,11 +49,10 @@ CREATE TABLE IndiciesData(
 	, TimeOfData datetime2
 	, CONSTRAINT PK_IndiciesData PRIMARY KEY CLUSTERED(Id)
 	, CONSTRAINT FK_IndiciesData_Catalog FOREIGN KEY (IndexId) REFERENCES Indicies (Id)
-	ON UPDATE CASCADE
-	ON DELETE CASCADE
 );
 
--- Data on ETF instruments price
+
+-- #4 Data on ETF instruments price
 -- Source: Yahoo Finance: https://finance.yahoo.com/etfs
 CREATE TABLE EtfCatalogue(
 	Id int NOT NULL IDENTITY
@@ -63,8 +61,6 @@ CREATE TABLE EtfCatalogue(
 	, ExchangeId int
 	, CONSTRAINT PK_EtfCatalogue PRIMARY KEY CLUSTERED(Id)
 	, CONSTRAINT FK_EtfCatalogue_Exchanges FOREIGN KEY (ExchangeId) REFERENCES Exchanges (Id)
-	ON UPDATE CASCADE
-	ON DELETE CASCADE
 );
 
 -- creating indexes #4
