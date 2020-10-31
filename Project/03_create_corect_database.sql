@@ -4,6 +4,37 @@ GO
 USE Stocks;
 GO
 
+-- duckpack - проектирование БД (Вижуал студия)
+-- пересмотреть по CLR - БД  - в контроль версий
+
+-- DBT - ? dbt.com (контроль качества кода)
+-- sqlcomplete
+
+-- cashing via api
+-- no history
+
+-- todo
+-- normalize exchange id -- put in facts table
+
+-- message quue = rabbit? -- in sql message broker - todo
+-- power bi for interface data visualization (or tableau)
+-- if powerbi - then DWH -- OLAP
+-- create OLAP infrastructure for PowerBI (no OLTP usage)
+-- columnstore if BI-reporting
+
+-- get data via api from json (sergey link -- may be)
+
+-- todo
+-- finance data - 4 into decimal
+
+-- todo
+-- view for data analytics
+
+-- aggregate several data sources into on warehouse (?)
+
+-- open door in otus - olap video youtube
+
+
 CREATE TABLE Exchanges(
 	Id BIGINT not null IDENTITY
 	, Name NVARCHAR(255)
