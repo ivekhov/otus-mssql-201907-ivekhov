@@ -112,7 +112,7 @@ select
 FROM analyst.operations_log AS ol;
 
 DECLARE @term_of_reading INT;
-SET @term_of_reading = 10;
+SET @term_of_reading = 14;
 
 SELECT TOP(10)
     t7.id_user
