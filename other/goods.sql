@@ -44,15 +44,18 @@ FROM ClientOrders AS CO
 
 GROUP BY CO.CityID, CO.OrderID)
 
--- select top(100) *
--- from ClientOrders
 
 SELECT COD.CityID, AVG(OrderSum)
 FROM CityOrders as COD
 GROUP BY CityID
 
--- select top(10) *
--- from CityOrders
--- where OrderID = 224660
-
 ;
+
+/***
+Answer:
+1	19659
+2	17325
+3	19274
+9	19614
+
+  ***/
